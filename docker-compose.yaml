@@ -1,0 +1,64 @@
+services:
+  hytale:
+    image: deinfreu/hytale-server:experimental
+    container_name: hytale-server
+    mem_limit: 10G
+    environment:
+      SERVER_IP: 0.0.0.0
+      SERVER_PORT: "5520"
+      PROD: "TRUE"
+      DEBUG: "FALSE"
+      TZ: Europe/Amsterdam
+      JAVA_ARGS: -Xms6G -Xmx8G
+    restart: unless-stopped
+    ports:
+      - 5520:5520/udp
+    volumes:
+      - ./data:/home/container
+      - /etc/machine-id:/etc/machine-id:ro
+    tty: true
+    stdin_open: true
+  hytale-restarter:
+    image: alpine:3.20
+    container_name: hytale-restarter
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Amsterdam
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command:
+      - /bin/sh
+      - -lc
+      - >
+        set -eu
+        apk add --no-cache docker-cli python3 tzdata >/dev/null
+
+        python3 - <<'PY'
+        import os, time, subprocess
+        from datetime import datetime, timedelta
+
+        # TZ aus Env übernehmen
+
+        if "TZ" in os.environ:
+            try:
+                time.tzset()
+            except Exception:
+                pass
+
+        print("Restarter started:", datetime.now().isoformat())
+
+        while True:
+            now = datetime.now()
+            if now.hour < 12:
+                target = now.replace(hour=12, minute=0, second=0, microsecond=0)
+            else:
+                target = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+
+            sleep_for = max(0, int((target - now).total_seconds()))
+            print(f"Sleeping {sleep_for}s until {target.strftime('%H:%M')} ...")
+            time.sleep(sleep_for)
+
+            print("Restarting hytale-server:", datetime.now().isoformat())
+            subprocess.run(["docker", "restart", "--time", "30", "hytale-server"], check=False)
+        PY
+networks: {}
