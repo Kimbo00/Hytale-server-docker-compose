@@ -37,8 +37,6 @@ services:
         import os, time, subprocess
         from datetime import datetime, timedelta
 
-        # TZ aus Env übernehmen
-
         if "TZ" in os.environ:
             try:
                 time.tzset()
