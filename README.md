@@ -124,7 +124,7 @@ You should see `-Xms... -Xmx...` in the output.
 
 ## Optional: Scheduled restarts (sidecar “restarter”)
 
-Docker Compose does not include a built-in “restart every 12 hours” timer. A sidecar container can handle scheduled restarts by using the Docker socket to restart the server container.
+Docker Compose does include a built-in “restart every 12 hours” timer. If you don't need it, just remove the hytale-restarter service.
 
 ### Security note
 
